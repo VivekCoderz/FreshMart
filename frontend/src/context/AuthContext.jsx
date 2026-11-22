@@ -1,33 +1,29 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState } from 'react';
 import api from '../services/api';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Load user from localStorage on refresh (without calling /profile)
-  useEffect(() => {
+  // Load user from localStorage on refresh (without calling /profile).
+  // Read synchronously so protected routes don't redirect before it is restored.
+  const [user, setUser] = useState(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');   // Extra safety
 
-    if (token) {
-      try {
-        // Agar login ke time user data save kiya tha
-        if (savedUser) {
-          setUser(JSON.parse(savedUser));
-        } else {
-          // Fallback - token hai toh assume logged in (role ke liye login mein save kar rahe hain)
-          setUser({ role: localStorage.getItem('role') || 'customer' });
-        }
-      } catch (e) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
+    if (!token) return null;
+    try {
+      // Agar login ke time user data save kiya tha
+      if (savedUser) return JSON.parse(savedUser);
+      // Fallback - token hai toh assume logged in (role ke liye login mein save kar rahe hain)
+      return { role: localStorage.getItem('role') || 'customer' };
+    } catch {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return null;
     }
-    setLoading(false);
-  }, []);
+  });
+  const loading = false;
 
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
@@ -48,6 +44,26 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
+  const supplierLogin = async (email, password) => {
+    const res = await api.post('/supplier/login', { email, password });
+
+    localStorage.setItem('token', res.data.token);
+    localStorage.setItem('role', 'supplier');
+
+    const userData = {
+      _id: res.data.supplier.id,
+      fullName: res.data.supplier.name,
+      companyName: res.data.supplier.companyName,
+      email: res.data.supplier.email,
+      role: 'supplier'
+    };
+
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+
+    return res.data;
+  };
+
   const register = async (userData) => {
     const res = await api.post('/auth/register', userData);
     return res.data;
@@ -56,11 +72,12 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('role');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, supplierLogin, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

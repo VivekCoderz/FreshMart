@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const Footer = () => {
   return (
     <footer className="bg-gray-900 text-gray-400 py-16">
@@ -20,6 +22,7 @@ const Footer = () => {
               <p>My Orders</p>
               <p>About Us</p>
               <p>Contact</p>
+              <Link to="/supplier/register" className="block hover:text-green-400">Become a Supplier</Link>
             </div>
           </div>
 

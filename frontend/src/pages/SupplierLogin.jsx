@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { AuthContext } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const SupplierLogin = () => {
   const navigate = useNavigate();
+  const { supplierLogin } = useContext(AuthContext);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -23,10 +24,7 @@ const SupplierLogin = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/supplier/login', formData);
-      
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('role', 'supplier');
+      const res = await supplierLogin(formData.email, formData.password);
 
       toast.success(`Welcome back, ${res.data.supplier.name}!`);
       navigate('/supplier/dashboard');   // Correct redirect

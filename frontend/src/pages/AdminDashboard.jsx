@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { AuthContext } from '../context/AuthContext';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -17,6 +18,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -65,13 +67,13 @@ const AdminDashboard = () => {
       );
       toast.success(isApproved ? 'Supplier Approved' : 'Supplier Rejected');
       fetchAllData();
-    } catch (error) {
+    } catch {
       toast.error('Failed to update status');
     }
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    logout();
     navigate('/login');
     toast.success('Logged out successfully');
   };

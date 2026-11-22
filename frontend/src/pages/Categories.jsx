@@ -39,7 +39,7 @@ const Categories = () => {
         const allCategories = ['All', ...res.data];
         
         setCategories(allCategories);
-      } catch (error) {
+      } catch {
         toast.error('Failed to load categories');
         // Fallback categories if API fails
         setCategories(['All', 'Vegetables', 'Fruits', 'Dairy', 'Pantry', 'Meat', 'Bakery']);

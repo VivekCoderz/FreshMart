@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import toast from 'react-hot-toast';
 
 const SupplierRegister = () => {
@@ -33,7 +33,7 @@ const SupplierRegister = () => {
     setLoading(true);
 
     try {
-      await axios.post('http://localhost:5000/api/supplier/register', formData);
+      await api.post('/supplier/register', formData);
       
       toast.success("Registration successful! Waiting for admin approval.");
       navigate('/supplier/login');

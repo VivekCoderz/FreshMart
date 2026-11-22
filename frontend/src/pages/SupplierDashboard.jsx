@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const SupplierDashboard = () => {
@@ -19,16 +20,14 @@ const SupplierDashboard = () => {
   });
 
   const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
 
   // Fetch Supplier Products
   const fetchMyProducts = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/supplier/products', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('/supplier/products');
       setProducts(res.data);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load your products");
     } finally {
       setLoading(false);
@@ -43,10 +42,7 @@ const SupplierDashboard = () => {
   const handleAddProduct = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post('http://localhost:5000/api/supplier/products', newProduct, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.post('/supplier/products', newProduct);
 
       toast.success("✅ Product added successfully!");
       setProducts([res.data, ...products]);
@@ -62,7 +58,7 @@ const SupplierDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    logout();
     navigate('/supplier/login');
     toast.success("Logged out successfully");
   };
