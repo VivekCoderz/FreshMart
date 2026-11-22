@@ -4,3 +4,10 @@
 .env.*
 !.env.example
 node_modules/
+dist/
+build/
+*.exe
+*.log
+
+# user-uploaded product images (keep the folder itself in git)
+backend/uploads/*
