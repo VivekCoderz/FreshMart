@@ -64,7 +64,8 @@ const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate('user', 'fullName email');
 
-    if (order) {
+    // Only the customer who placed the order (or an admin) may view it
+    if (order && (req.user.role === 'admin' || String(order.user?._id) === String(req.user._id))) {
       res.json(order);
     } else {
       res.status(404).json({ message: 'Order not found' });

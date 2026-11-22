@@ -46,7 +46,7 @@ const Products = () => {
 
       const res = await api.get(url);
       setProducts(res.data);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load products');
     } finally {
       setLoading(false);
@@ -58,7 +58,7 @@ const Products = () => {
     try {
       const res = await api.get('/products/categories');
       setCategories(['All', ...res.data]);
-    } catch (error) {
+    } catch {
       console.error('Failed to load categories');
     }
   };

@@ -26,7 +26,7 @@ const ProductDetail = () => {
 
         const reviewsRes = await api.get(`/reviews/${id}`);
         setReviews(reviewsRes.data);
-      } catch (error) {
+      } catch {
         toast.error('Failed to load product');
       } finally {
         setLoading(false);

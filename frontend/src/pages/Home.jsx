@@ -14,7 +14,7 @@ const Home = () => {
       try {
         const res = await api.get('/products?sort=newest');
         setFeaturedProducts(res.data.slice(0, 8));
-      } catch (error) {
+      } catch {
         toast.error('Failed to load products');
       } finally {
         setLoading(false);

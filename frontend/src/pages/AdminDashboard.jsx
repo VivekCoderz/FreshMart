@@ -1,161 +1,199 @@
-import { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import toast from 'react-hot-toast';
-import AddProductModal from '../components/AddProductModal';
+import { AuthContext } from '../context/AuthContext';
 
 const AdminDashboard = () => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalOrders: 0,
+    totalSuppliers: 0,
+    totalRevenue: 0
+  });
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [activeTab, setActiveTab] = useState('products');
+  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
 
-  const fetchProducts = async () => {
-    try {
-      const res = await api.get('/products');
-      setProducts(res.data);
-    } catch (error) {
-      toast.error('Failed to load products');
-    }
-  };
+  const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
 
-  const fetchOrders = async () => {
+  const fetchAllData = async () => {
+    setLoading(true);
     try {
-      const res = await api.get('/orders');
-      setOrders(res.data);
+      const token = localStorage.getItem('token');
+
+      const [productsRes, ordersRes, suppliersRes] = await Promise.all([
+        axios.get('http://localhost:5000/api/products', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('http://localhost:5000/api/orders', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('http://localhost:5000/api/admin/suppliers', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
+      setProducts(productsRes.data);
+      setOrders(ordersRes.data);
+      setSuppliers(suppliersRes.data);
+
+      // Calculate Stats
+      const revenue = ordersRes.data.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+      setStats({
+        totalProducts: productsRes.data.length,
+        totalOrders: ordersRes.data.length,
+        totalSuppliers: suppliersRes.data.length,
+        totalRevenue: revenue
+      });
+
     } catch (error) {
-      toast.error('Failed to load orders');
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to load dashboard");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([fetchProducts(), fetchOrders()]);
-      setLoading(false);
-    };
-    loadData();
+    fetchAllData();
   }, []);
 
-  const updateOrderStatus = async (orderId, newStatus) => {
+  const updateSupplierStatus = async (supplierId, isApproved) => {
     try {
-      await api.put(`/orders/${orderId}/status`, { status: newStatus });
-      toast.success('Order status updated');
-      fetchOrders();
-    } catch (error) {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `http://localhost:5000/api/admin/suppliers/${supplierId}/status`,
+        { isApproved },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(isApproved ? 'Supplier Approved' : 'Supplier Rejected');
+      fetchAllData();
+    } catch {
       toast.error('Failed to update status');
     }
   };
 
-  const deleteProduct = async (productId) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
-    
-    try {
-      await api.delete(`/products/${productId}`);
-      toast.success('Product deleted successfully');
-      fetchProducts();
-    } catch (error) {
-      toast.error('Failed to delete product');
-    }
-  };
-
-  const handleProductAdded = (newProduct) => {
-    setProducts([newProduct, ...products]);
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+    toast.success('Logged out successfully');
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="flex justify-between items-center mb-12">
-          <div>
-            <h1 className="text-5xl font-bold">Admin Dashboard</h1>
-            <p className="text-gray-600 mt-2">Manage your grocery store</p>
+      {/* Top Header */}
+      <div className="bg-white shadow-sm border-b py-6 px-8 flex justify-between items-center sticky top-0 z-50">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center text-white text-4xl shadow">
+            🥬
           </div>
-          
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="bg-green-600 text-white px-8 py-4 rounded-3xl flex items-center gap-3 hover:bg-green-700 transition-all font-semibold"
-          >
-            <span>+</span> Add New Product
-          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+            <p className="text-green-600 font-medium">FreshMart • Full Control</p>
+          </div>
+        </div>
+
+        <button
+          onClick={handleLogout}
+          className="px-6 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-2xl font-medium transition-all"
+        >
+          Logout
+        </button>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-8 py-10">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="bg-white rounded-3xl p-8 shadow">
+            <p className="text-gray-500 text-sm">Total Revenue</p>
+            <p className="text-4xl font-bold text-green-600 mt-3">₹{stats.totalRevenue}</p>
+          </div>
+          <div className="bg-white rounded-3xl p-8 shadow">
+            <p className="text-gray-500 text-sm">Total Orders</p>
+            <p className="text-4xl font-bold mt-3">{stats.totalOrders}</p>
+          </div>
+          <div className="bg-white rounded-3xl p-8 shadow">
+            <p className="text-gray-500 text-sm">Total Products</p>
+            <p className="text-4xl font-bold mt-3">{stats.totalProducts}</p>
+          </div>
+          <div className="bg-white rounded-3xl p-8 shadow">
+            <p className="text-gray-500 text-sm">Total Suppliers</p>
+            <p className="text-4xl font-bold mt-3">{stats.totalSuppliers}</p>
+          </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b mb-10">
-          <button 
-            onClick={() => setActiveTab('products')}
-            className={`px-10 py-4 font-semibold text-lg border-b-4 transition-all ${activeTab === 'products' ? 'border-green-600 text-green-600' : 'border-transparent text-gray-500'}`}
-          >
-            Products ({products.length})
-          </button>
-          <button 
-            onClick={() => setActiveTab('orders')}
-            className={`px-10 py-4 font-semibold text-lg border-b-4 transition-all ${activeTab === 'orders' ? 'border-green-600 text-green-600' : 'border-transparent text-gray-500'}`}
-          >
-            Orders ({orders.length})
-          </button>
+        <div className="flex border-b mb-10 bg-white rounded-t-3xl">
+          {['overview', 'products', 'orders', 'suppliers'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-5 text-lg font-semibold border-b-4 transition-all ${
+                activeTab === tab
+                  ? 'border-green-600 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-xl">Loading dashboard...</div>
-        ) : activeTab === 'products' ? (
-          <div className="bg-white rounded-3xl overflow-hidden">
+          <div className="text-center py-20 text-xl text-gray-500">Loading dashboard data...</div>
+        ) : activeTab === 'suppliers' ? (
+          // Suppliers Tab
+          <div className="bg-white rounded-3xl overflow-hidden shadow">
             <table className="w-full">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="text-left p-6">Product</th>
-                  <th className="text-left p-6">Category</th>
-                  <th className="text-left p-6">Price</th>
-                  <th className="text-left p-6">Stock</th>
-                  <th className="text-right p-6">Actions</th>
+                  <th className="text-left p-6">Company Name</th>
+                  <th className="text-left p-6">Supplier Name</th>
+                  <th className="text-left p-6">Email</th>
+                  <th className="text-left p-6">Phone</th>
+                  <th className="text-left p-6">Status</th>
+                  <th className="text-right p-6">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {products.map(product => (
-                  <tr key={product._id} className="border-t hover:bg-gray-50">
-                    <td className="p-6 flex items-center gap-4">
-                      <img src={product.image} alt={product.name} className="w-14 h-14 object-cover rounded-xl" />
-                      <div className="font-semibold">{product.name}</div>
-                    </td>
-                    <td className="p-6">
-                      <span className="px-4 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                        {product.category}
-                      </span>
-                    </td>
-                    <td className="p-6 font-semibold">₹{product.price}</td>
-                    <td className="p-6">
-                      <span className={`${product.stock < 20 ? 'text-red-600 font-medium' : 'text-green-600'}`}>
-                        {product.stock}
-                      </span>
-                    </td>
-                    <td className="p-6 text-right">
-                      <button 
-                        onClick={() => deleteProduct(product._id)}
-                        className="text-red-600 hover:text-red-700 px-5 py-2 font-medium"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {suppliers.length === 0 ? (
+                  <tr><td colSpan="6" className="p-20 text-center text-gray-500">No suppliers yet</td></tr>
+                ) : (
+                  suppliers.map((s) => (
+                    <tr key={s._id} className="border-t hover:bg-gray-50">
+                      <td className="p-6 font-semibold">{s.companyName}</td>
+                      <td className="p-6">{s.name}</td>
+                      <td className="p-6">{s.email}</td>
+                      <td className="p-6">{s.phone || '-'}</td>
+                      <td className="p-6">
+                        <span className={`px-5 py-2 rounded-full text-sm font-medium ${s.isApproved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          {s.isApproved ? 'Approved' : 'Pending'}
+                        </span>
+                      </td>
+                      <td className="p-6 text-right">
+                        {!s.isApproved ? (
+                          <button onClick={() => updateSupplierStatus(s._id, true)} className="bg-green-600 text-white px-6 py-2 rounded-xl hover:bg-green-700 text-sm">
+                            Approve
+                          </button>
+                        ) : (
+                          <button onClick={() => updateSupplierStatus(s._id, false)} className="bg-red-600 text-white px-6 py-2 rounded-xl hover:bg-red-700 text-sm">
+                            Reject
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         ) : (
-          // Orders Table (same as before)
-          <div className="bg-white rounded-3xl overflow-hidden">
-            {/* ... existing orders table code from previous message ... */}
-            {/* (I kept it short here - you can copy the orders table from previous response) */}
+          <div className="bg-white rounded-3xl p-12 text-center text-xl text-gray-500">
+            {activeTab === 'products' && 'All Products Management - Coming Soon'}
+            {activeTab === 'orders' && 'All Orders Management - Coming Soon'}
+            {activeTab === 'overview' && 'Overview Dashboard - Coming Soon'}
           </div>
         )}
       </div>
-
-      {/* Add Product Modal */}
-      <AddProductModal 
-        isOpen={showAddModal} 
-        onClose={() => setShowAddModal(false)} 
-        onProductAdded={handleProductAdded} 
-      />
     </div>
   );
 };

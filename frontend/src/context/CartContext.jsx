@@ -1,14 +1,18 @@
 import { createContext, useState, useEffect } from 'react';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([]);
-
-  useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) setCart(JSON.parse(savedCart));
-  }, []);
+  // Restore the saved cart before the first render, so the save effect below
+  // never overwrites it with an empty array
+  const [cart, setCart] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('cart')) || [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
