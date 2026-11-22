@@ -1,18 +1,20 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose")
 
 const productSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
-  description: { type: String, required: true },
-  price: { type: Number, required: true, min: 0 },
-  category: { 
-    type: String, 
-    required: true,
-    enum: ['Vegetables', 'Fruits', 'Dairy', 'Pantry', 'Meat', 'Bakery']
+  name: { type: String, required: true },
+  price: { type: Number, required: true },
+  stock: { type: Number, required: true },
+  category: { type: String, required: true },
+  description: String,
+  image: String,
+  
+  // Link to Supplier
+  supplier: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Supplier',
+    required: true
   },
-  stock: { type: Number, required: true, default: 0, min: 0 },
-  image: { type: String, required: true },   // URL or path like /uploads/onion.jpg
-  avgRating: { type: Number, default: 0 },
-  numReviews: { type: Number, default: 0 },
+
   createdAt: { type: Date, default: Date.now }
 });
 
