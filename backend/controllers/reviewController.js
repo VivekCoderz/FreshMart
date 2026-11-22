@@ -40,13 +40,12 @@ const createReview = async (req, res) => {
     product.numReviews = numReviews;
     await product.save();
 
+    await review.populate('user', 'fullName');
+
     res.status(201).json({
       success: true,
       message: "Thank you for your review!",
-      review: {
-        ...review.toObject(),
-        user: { fullName: req.user.fullName }
-      }
+      review
     });
   } catch (error) {
     res.status(400).json({ message: error.message });

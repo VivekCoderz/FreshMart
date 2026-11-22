@@ -6,7 +6,7 @@ const {
   getMyProducts 
 } = require('../controllers/supplierController');
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect, supplierOnly } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ router.post('/register', supplierRegister);
 router.post('/login', supplierLogin);
 
 // Protected Supplier Routes
-router.post('/products', protect, addProduct);
-router.get('/products', protect, getMyProducts);
+router.post('/products', protect, supplierOnly, addProduct);
+router.get('/products', protect, supplierOnly, getMyProducts);
 
 module.exports = router;

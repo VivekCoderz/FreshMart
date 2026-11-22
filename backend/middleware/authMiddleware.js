@@ -14,7 +14,8 @@ const protect = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'freshmart_secret_2026');
     
-    req.user = decoded;   // { id, role }
+    // { id, role } - _id alias keeps controllers that read req.user._id working
+    req.user = { ...decoded, _id: decoded.id };
     next();
   } catch (error) {
     res.status(401).json({ message: "Not authorized, token failed" });
@@ -28,4 +29,11 @@ const adminOnly = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, adminOnly };
+const supplierOnly = (req, res, next) => {
+  if (!req.user || req.user.role !== 'supplier') {
+    return res.status(403).json({ message: "Not authorized as supplier" });
+  }
+  next();
+};
+
+module.exports = { protect, adminOnly, supplierOnly };

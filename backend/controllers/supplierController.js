@@ -8,6 +8,10 @@ const supplierRegister = async (req, res) => {
   try {
     const { name, email, password, companyName, phone, address } = req.body;
 
+    if (!name || !email || !password || !companyName) {
+      return res.status(400).json({ message: "Name, email, password and company name are required" });
+    }
+
     const existing = await Supplier.findOne({ email });
     if (existing) return res.status(400).json({ message: "Email already registered" });
 
@@ -40,14 +44,14 @@ const supplierLogin = async (req, res) => {
     const { email, password } = req.body;
 
     const supplier = await Supplier.findOne({ email });
-    if (!supplier) return res.status(400).json({ message: "Invalid credentials" });
+    if (!supplier) return res.status(401).json({ message: "Invalid credentials" });
+
+    const isMatch = await bcrypt.compare(password, supplier.password);
+    if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
     if (!supplier.isApproved) {
       return res.status(403).json({ message: "Your account is not approved by admin yet." });
     }
-
-    const isMatch = await bcrypt.compare(password, supplier.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = jwt.sign(
       { id: supplier._id, role: 'supplier' },

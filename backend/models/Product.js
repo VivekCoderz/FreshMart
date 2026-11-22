@@ -7,12 +7,13 @@ const productSchema = new mongoose.Schema({
   category: { type: String, required: true },
   description: String,
   image: String,
+  avgRating: { type: Number, default: 0 },
+  numReviews: { type: Number, default: 0 },
   
-  // Link to Supplier
+  // Link to Supplier (admin-created and older products have none)
   supplier: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Supplier',
-    required: true
+    ref: 'Supplier'
   },
 
   createdAt: { type: Date, default: Date.now }
